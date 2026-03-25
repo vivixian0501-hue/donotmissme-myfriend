@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>绝密交接 - 解密游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+            overflow: hidden;
+        }
+
+        /* 桌面背景 */
+        #desktop {
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            position: relative;
+        }
+
+        /* 桌面图标区域 */
+        #icons-area {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .desktop-icon {
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .desktop-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .desktop-icon:active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(0.95);
+        }
+
+        .icon-emoji {
+            font-size: 48px;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .icon-label {
+            margin-top: 6px;
+            color: #fff;
+            font-size: 11px;
+            text-align: center;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+            word-break: break-all;
+            line-height: 1.3;
+        }
+
+        /* 任务栏 */
+        #taskbar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: linear-gradient(180deg, rgba(40, 40, 60, 0.95) 0%, rgba(20, 20, 35, 0.98) 100%);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 0 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* 系统时间 */
+        #system-time {
+            color: #fff;
+            font-size: 14px;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #system-time:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 弹窗遮罩 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 窗口样式 */
+        .window {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 0, 0, 0.2);
+            min-width: 380px;
+            max-width: 90vw;
+            animation: windowOpen 0.25s ease;
+            overflow: hidden;
+        }
+
+        @keyframes windowOpen {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .window-header {
+            background: linear-gradient(180deg, #f6f6f6 0%, #e8e8e8 100%);
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #d0d0d0;
+        }
+
+        .window-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .window-close {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ff5f57;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.15s;
+        }
+
+        .window-close:hover {
+            background: #ff3b30;
+        }
+
+        .window-close::before,
+        .window-close::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 1.5px;
+            background: rgba(0, 0, 0, 0);
+            top: 50%;
+            left: 50%;
+            transition: background 0.15s;
+        }
+
+        .window-close:hover::before,
+        .window-close:hover::after {
+            background: rgba(80, 0, 0, 0.8);
+        }
+
+        .window-close::before {
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .window-close::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+
+        .window-body {
+            padding: 25px;
+            color: #333;
+        }
+
+        .window-body p {
+            margin-bottom: 18px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        /* 输入框 */
+        .input-field {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            margin-bottom: 15px;
+        }
+
+        .input-field:focus {
+            border-color: #007aff;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+        }
+
+        /* 按钮 */
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(180deg, #007aff 0%, #0066d6 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(180deg, #0088ff 0%, #007aff 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* 选项按钮组 */
+        .options-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            padding: 10px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            background: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            border-color: #007aff;
+            background: #f0f7ff;
+        }
+
+        .option-btn.selected {
+            border-color: #007aff;
+            background: #007aff;
+            color: #fff;
+        }
+
+        /* 槽位容器 */
+        .slots-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+
+        .slot {
+            width: 110px;
+            height: 50px;
+            border: 2px dashed #c0c0c0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            color: #999;
+            background: #f9f9f9;
+            transition: all 0.2s;
+        }
+
+        .slot.filled {
+            border: 2px solid #007aff;
+            background: #e8f4ff;
+            color: #007aff;
+            font-weight: 500;
+        }
+
+        .slot.filled:hover {
+            background: #ffe8e8;
+            border-color: #ff3b30;
+            cursor: pointer;
+        }
+
+        /* 词条按钮 */
+        .tag-btn {
+            padding: 8px 16px;
+            border: 2px solid #d0d0d0;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tag-btn:hover:not(.used) {
+            border-color: #007aff;
+            background: #f0f7ff;
+        }
+
+        .tag-btn.used {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* 高亮弹窗 */
+        .highlight-popup {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            color: #fff;
+            padding: 30px 40px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: 0 15px 50px rgba(255, 107, 107, 0.5);
+            animation: pulse 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .highlight-popup .btn {
+            margin-top: 20px;
+            background: #fff;
+            color: #ff6b6b;
+        }
+
+        /* 时间输入弹窗 */
+        .time-popup {
+            background: rgba(30, 30, 50, 0.98);
+            padding: 25px;
+            border-radius: 12px;
+            color: #fff;
+        }
+
+        .time-popup .input-field {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            text-align: center;
+            font-size: 28px;
+            letter-spacing: 4px;
+        }
+
+        .time-popup .input-field:focus {
+            border-color: #007aff;
+        }
+
+        .time-popup .btn-primary {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        /* 结局画面 */
+        #ending-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 1s ease;
+            overflow: hidden;
+        }
+
+        #ending-screen.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 像素漂浮元素 */
+        .pixel-float {
+            position: absolute;
+            font-size: 40px;
+            opacity: 0.6;
+            image-rendering: pixelated;
+            filter: contrast(1.2);
+            animation: floatAround 8s ease-in-out infinite;
+        }
+
+        .pixel-float:nth-child(1) { top: 10%; left: 8%; animation-delay: 0s; animation-duration: 7s; }
+        .pixel-float:nth-child(2) { top: 20%; right: 12%; animation-delay: -1s; animation-duration: 9s; }
+        .pixel-float:nth-child(3) { bottom: 25%; left: 15%; animation-delay: -2s; animation-duration: 8s; }
+        .pixel-float:nth-child(4) { bottom: 15%; right: 10%; animation-delay: -3s; animation-duration: 10s; }
+        .pixel-float:nth-child(5) { top: 35%; left: 5%; animation-delay: -4s; animation-duration: 6s; }
+        .pixel-float:nth-child(6) { top: 60%; right: 8%; animation-delay: -2.5s; animation-duration: 11s; }
+        .pixel-float:nth-child(7) { bottom: 35%; left: 25%; animation-delay: -1.5s; animation-duration: 7.5s; }
+        .pixel-float:nth-child(8) { top: 15%; left: 35%; animation-delay: -3.5s; animation-duration: 9.5s; }
+
+        @keyframes floatAround {
+            0%, 100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            25% {
+                transform: translate(15px, -20px) rotate(5deg);
+            }
+            50% {
+                transform: translate(-10px, 15px) rotate(-3deg);
+            }
+            75% {
+                transform: translate(20px, 10px) rotate(8deg);
+            }
+        }
+
+        /* 像素卡比 */
+        .pixel-kirby {
+            width: 48px;
+            height: 48px;
+            background:
+                linear-gradient(90deg, transparent 16px, #FFB6C1 16px, #FFB6C1 32px, transparent 32px),
+                linear-gradient(90deg, transparent 8px, #FFB6C1 8px, #FFB6C1 40px, transparent 40px),
+                linear-gradient(90deg, transparent 4px, #FFB6C1 4px, #FFB6C1 44px, transparent 44px),
+                linear-gradient(90deg, #FFB6C1 0px, #FFB6C1 48px);
+            background-size: 48px 8px;
+            background-position: 0 0, 0 8px, 0 16px, 0 24px;
+            background-repeat: no-repeat;
+            border-radius: 50%;
+            position: relative;
+        }
+        .pixel-kirby::before {
+            content: '●  ●';
+            position: absolute;
+            top: 12px;
+            left: 8px;
+            font-size: 10px;
+            color: #000;
+            letter-spacing: 8px;
+        }
+        .pixel-kirby::after {
+            content: '◡';
+            position: absolute;
+            top: 22px;
+            left: 18px;
+            font-size: 12px;
+            color: #FF6B6B;
+        }
+
+        /* 守望先锋Logo像素风 */
+        .pixel-ow-logo {
+            width: 56px;
+            height: 56px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .pixel-ow-logo::before {
+            content: '';
+            width: 50px;
+            height: 50px;
+            border: 4px solid #F99E1A;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #F99E1A, inset 0 0 8px rgba(249, 158, 26, 0.3);
+        }
+        .pixel-ow-logo::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-bottom: 20px solid #F99E1A;
+            top: 14px;
+            filter: drop-shadow(0 0 5px #F99E1A);
+        }
+
+        /* 守望先锋英雄像素头像 */
+        .pixel-hero {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            box-shadow: 0 0 15px currentColor;
+        }
+        .pixel-hero.tracer {
+            background: linear-gradient(135deg, #FF9500 0%, #FF6B00 100%);
+            color: #fff;
+        }
+        .pixel-hero.dva {
+            background: linear-gradient(135deg, #FF77AC 0%, #FF4D94 100%);
+            color: #fff;
+        }
+        .pixel-hero.genji {
+            background: linear-gradient(135deg, #7CFC00 0%, #32CD32 100%);
+            color: #fff;
+        }
+        .pixel-hero.soldier {
+            background: linear-gradient(135deg, #4169E1 0%, #1E3A8A 100%);
+            color: #fff;
+        }
+
+        .ending-text {
+            color: #fff;
+            font-size: 36px;
+            text-align: center;
+            opacity: 0;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.5),
+                         0 0 60px rgba(255, 255, 255, 0.3);
+            animation: glowText 2s ease infinite alternate;
+            z-index: 10;
+        }
+
+        .ending-text.line1 {
+            animation-delay: 0s;
+        }
+
+        .ending-text.line2 {
+            margin-top: 30px;
+            font-size: 24px;
+            animation-delay: 0.5s;
+        }
+
+        .ending-text.line3 {
+            margin-top: 25px;
+            font-size: 20px;
+            animation-delay: 1s;
+        }
+
+        @keyframes glowText {
+            from {
+                text-shadow: 0 0 20px rgba(255, 255, 255, 0.4),
+                             0 0 40px rgba(255, 255, 255, 0.2);
+            }
+            to {
+                text-shadow: 0 0 40px rgba(255, 255, 255, 0.8),
+                             0 0 80px rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        @keyframes textFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ending-text.visible {
+            animation: textFadeIn 1.5s ease forwards, glowText 2s ease infinite alternate 1.5s;
+        }
+
+        /* 隐藏元素 */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 桌面 -->
+    <div id="desktop">
+        <!-- 图标区域 -->
+        <div id="icons-area">
+            <!-- 初始图标：压缩包 -->
+            <div class="desktop-icon" id="icon-zip" onclick="openZipWindow()">
+                <div class="icon-emoji">🗂️</div>
+                <div class="icon-label">绝密交接-务必看完.zip</div>
+            </div>
+            <!-- 解锁后显示的图标 -->
+            <div class="desktop-icon hidden" id="icon-docx" onclick="openDocxWindow()">
+                <div class="icon-emoji">📄</div>
+                <div class="icon-label">老板战略.docx</div>
+            </div>
+            <div class="desktop-icon hidden" id="icon-txt" onclick="openTxtWindow()">
+                <div class="icon-emoji">📒</div>
+                <div class="icon-label">加密日记.txt</div>
+            </div>
+            <div class="desktop-icon hidden" id="icon-exe" onclick="openExeWindow()">
+                <div class="icon-emoji">⚙️</div>
+                <div class="icon-label">终极目标.exe</div>
+            </div>
+        </div>
+
+        <!-- 任务栏 -->
+        <div id="taskbar">
+            <div id="system-time" onclick="openTimeEditor()">09:00</div>
+        </div>
+    </div>
+
+    <!-- 结局画面 -->
+    <div id="ending-screen">
+        <!-- 像素漂浮元素 -->
+        <div class="pixel-float">
+            <div class="pixel-kirby"></div>
+        </div>
+        <div class="pixel-float">
+            <div class="pixel-ow-logo"></div>
+        </div>
+        <div class="pixel-float">
+            <div class="pixel-hero tracer">⚡</div>
+        </div>
+        <div class="pixel-float">
+            <div class="pixel-hero dva">🐰</div>
+        </div>
+        <div class="pixel-float">
+            <div class="pixel-hero genji">🐉</div>
+        </div>
+        <div class="pixel-float">
+            <div class="pixel-hero soldier">76</div>
+        </div>
+        <div class="pixel-float" style="font-size: 50px; color: #FFB6C1; text-shadow: 0 0 20px #FFB6C1;">★</div>
+        <div class="pixel-float" style="font-size: 45px; color: #F99E1A; text-shadow: 0 0 20px #F99E1A;">✦</div>
+
+        <div class="ending-text line1">游戏通关。</div>
+        <div class="ending-text line2">有缘江湖再见，希望下次见面我们都能按时下班</div>
+        <div class="ending-text line3">记得微信常联系😉</div>
+    </div>
+
+    <!-- 模态框容器 -->
+    <div id="modal-container"></div>
+
+    <script>
+        // 游戏状态
+        const gameState = {
+            level1Complete: false,      // 压缩包密码
+            timeClueFound: false,       // 11:45线索
+            strategyComplete: false,    // 老板战略
+            diaryUnlocked: false,       // 日记密码（exe授权）
+            currentTime: "09:00",
+            selectedStrategy: new Set(),
+            finalSlots: [],
+            usedTags: new Set()
+        };
+
+        // 目标答案
+        const ANSWERS = {
+            zipPassword: "2030",
+            targetTime: "11:45",
+            strategyKeywords: new Set(["节点", "春节", "AI"]),
+            restaurantName: "野杜鹃",
+            finalTags: new Set(["成都", "180", "三环内三套房", "帅哥"])
+        };
+
+        // 模态框管理
+        function showModal(content, isHighlight = false) {
+            const container = document.getElementById('modal-container');
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = content;
+            container.appendChild(overlay);
+
+            // 点击遮罩关闭（如果不是高亮弹窗）
+            if (!isHighlight) {
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        closeModal();
+                    }
+                });
+            }
+        }
+
+        function closeModal() {
+            const container = document.getElementById('modal-container');
+            const overlay = container.querySelector('.modal-overlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+
+        // 关卡一：压缩包密码
+        function openZipWindow() {
+            if (gameState.level1Complete) {
+                alert("压缩包已解压完成！");
+                return;
+            }
+
+            const content = `
+                <div class="window">
+                    <div class="window-header">
+                        <span class="window-title">🗂️ 绝密交接-务必看完.zip</span>
+                        <button class="window-close" onclick="closeModal()"></button>
+                    </div>
+                    <div class="window-body">
+                        <p>懂的都懂，输入我们的集结时间。</p>
+                        <input type="text" class="input-field" id="zip-password" placeholder="请输入密码..." maxlength="4">
+                        <button class="btn btn-primary" onclick="verifyZipPassword()">解压</button>
+                    </div>
+                </div>
+            `;
+            showModal(content);
+            setTimeout(() => document.getElementById('zip-password').focus(), 100);
+        }
+
+        function verifyZipPassword() {
+            const input = document.getElementById('zip-password');
+            const password = input.value.trim();
+
+            // 开发者秘籍：输入 0331 跳过所有关卡
+            if (password === "0331") {
+                gameState.level1Complete = true;
+                gameState.timeClueFound = true;
+                gameState.strategyComplete = true;
+                gameState.diaryUnlocked = true;
+                closeModal();
+
+                // 显示新图标
+                document.getElementById('icon-docx').classList.remove('hidden');
+                document.getElementById('icon-txt').classList.remove('hidden');
+                document.getElementById('icon-exe').classList.remove('hidden');
+
+                alert("🎮 开发者模式已激活！点击终极目标.exe即可通关。");
+                return;
+            }
+
+            if (password === ANSWERS.zipPassword) {
+                gameState.level1Complete = true;
+                closeModal();
+
+                // 显示新图标
+                document.getElementById('icon-docx').classList.remove('hidden');
+                document.getElementById('icon-txt').classList.remove('hidden');
+                document.getElementById('icon-exe').classList.remove('hidden');
+
+                alert("解压成功！桌面上出现了新文件...");
+            } else {
+                alert("四位数字，神秘时间！守望先锋启动！");
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        // 时间编辑器
+        function openTimeEditor() {
+            const content = `
+                <div class="time-popup">
+                    <p style="text-align: center; margin-bottom: 15px; font-size: 14px;">修改系统时间</p>
+                    <input type="text" class="input-field" id="time-input" placeholder="HH:MM" value="${gameState.currentTime}" maxlength="5">
+                    <button class="btn btn-primary" onclick="submitTime()">确认</button>
+                </div>
+            `;
+            showModal(content);
+            setTimeout(() => {
+                const input = document.getElementById('time-input');
+                input.focus();
+                input.select();
+            }, 100);
+        }
+
+        function submitTime() {
+            const input = document.getElementById('time-input');
+            const time = input.value.trim();
+
+            // 简单验证时间格式
+            if (!/^\d{1,2}:\d{2}$/.test(time)) {
+                alert("请输入正确的时间格式（HH:MM）");
+                return;
+            }
+
+            gameState.currentTime = time;
+            document.getElementById('system-time').textContent = time;
+            closeModal();
+
+            // 检查是否是目标时间
+            if (time === ANSWERS.targetTime && !gameState.timeClueFound) {
+                gameState.timeClueFound = true;
+                setTimeout(() => {
+                    showFruitPopup();
+                }, 300);
+            }
+        }
+
+        function showFruitPopup() {
+            const content = `
+                <div class="highlight-popup">
+                    <div>🍎🍌 水果抢购通道开启！</div>
+                    <div style="font-size: 16px; margin-top: 10px;">手速就是生命！</div>
+                    <button class="btn" onclick="closeFruitPopup()">我要抢！</button>
+                </div>
+            `;
+            showModal(content, true);
+        }
+
+        function closeFruitPopup() {
+            closeModal();
+            setTimeout(() => {
+                alert("获得线索：第一次越狱的代号是某家饭店。");
+            }, 200);
+        }
+
+        // 关卡二B：老板战略
+        function openDocxWindow() {
+            if (!gameState.level1Complete) {
+                alert("请先解压压缩包！");
+                return;
+            }
+
+            const allKeywords = ["节点", "春节", "AI", "摸鱼", "到点下班", "带薪拉屎", "绝不背锅", "拒绝内卷"];
+            const shuffled = allKeywords.sort(() => Math.random() - 0.5);
+
+            const buttons = shuffled.map(word => {
+                const selected = gameState.selectedStrategy.has(word) ? 'selected' : '';
+                return `<button class="option-btn ${selected}" onclick="toggleStrategy(this, '${word}')">${word}</button>`;
+            }).join('');
+
+            const content = `
+                <div class="window" style="max-width: 500px;">
+                    <div class="window-header">
+                        <span class="window-title">📄 老板战略.docx</span>
+                        <button class="window-close" onclick="closeModal()"></button>
+                    </div>
+                    <div class="window-body">
+                        <p>请选出今年Q1的三大核心战略关键词（多选），以对齐颗粒度。</p>
+                        <div class="options-group" id="strategy-options">
+                            ${buttons}
+                        </div>
+                        <button class="btn btn-primary" onclick="submitStrategy()">提交</button>
+                    </div>
+                </div>
+            `;
+            showModal(content);
+        }
+
+        function toggleStrategy(btn, word) {
+            if (btn.classList.contains('selected')) {
+                btn.classList.remove('selected');
+                gameState.selectedStrategy.delete(word);
+            } else {
+                btn.classList.add('selected');
+                gameState.selectedStrategy.add(word);
+            }
+        }
+
+        function submitStrategy() {
+            const selected = gameState.selectedStrategy;
+
+            // 检查是否完全匹配
+            if (selected.size === ANSWERS.strategyKeywords.size) {
+                let allMatch = true;
+                for (const word of selected) {
+                    if (!ANSWERS.strategyKeywords.has(word)) {
+                        allMatch = false;
+                        break;
+                    }
+                }
+
+                if (allMatch) {
+                    gameState.strategyComplete = true;
+                    closeModal();
+                    alert("恭喜对齐颗粒度。提示：去看看右下角的时间，每天中午我们都在抢什么？");
+                    return;
+                }
+            }
+
+            alert("颗粒度不对齐，请重新选择！");
+        }
+
+        // 关卡三：加密日记
+        function openTxtWindow() {
+            if (!gameState.level1Complete) {
+                alert("请先解压压缩包！");
+                return;
+            }
+
+            // 必须先完成时间谜题才能看到输入提示
+            if (!gameState.timeClueFound) {
+                const content = `
+                    <div class="window">
+                        <div class="window-header">
+                            <span class="window-title">📒 加密日记.txt</span>
+                            <button class="window-close" onclick="closeModal()"></button>
+                        </div>
+                        <div class="window-body">
+                            <p style="text-align: center; color: #999;">🔒 文件已加密</p>
+                            <p style="text-align: center; color: #666; font-size: 13px;">似乎需要某种线索才能解锁...</p>
+                        </div>
+                    </div>
+                `;
+                showModal(content);
+                return;
+            }
+
+            const content = `
+                <div class="window">
+                    <div class="window-header">
+                        <span class="window-title">📒 加密日记.txt</span>
+                        <button class="window-close" onclick="closeModal()"></button>
+                    </div>
+                    <div class="window-body">
+                        <p>为了防止HR偷窥，请输入我们第一次越狱去吃的那家饭店名字：</p>
+                        <input type="text" class="input-field" id="restaurant-name" placeholder="饭店名字...">
+                        <button class="btn btn-primary" onclick="verifyRestaurant()">确认</button>
+                    </div>
+                </div>
+            `;
+            showModal(content);
+            setTimeout(() => document.getElementById('restaurant-name').focus(), 100);
+        }
+
+        function verifyRestaurant() {
+            const input = document.getElementById('restaurant-name');
+            const name = input.value.trim();
+
+            if (name === ANSWERS.restaurantName) {
+                gameState.diaryUnlocked = true;
+                closeModal();
+                alert("密码正确！终极程序已解锁授权。");
+            } else {
+                alert("某天中午的滨江天街...");
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        // 关卡四：终极目标
+        function openExeWindow() {
+            if (!gameState.level1Complete) {
+                alert("请先解压压缩包！");
+                return;
+            }
+
+            if (!gameState.diaryUnlocked) {
+                alert("未获得授权，无法打开。");
+                return;
+            }
+
+            // 重置状态
+            gameState.finalSlots = [];
+            gameState.usedTags = new Set();
+
+            const allTags = ["成都", "180", "三环内三套房", "帅哥", "鹤岗", "160", "合租地下室", "抠脚大汉", "铁岭", "2米5", "桥洞底", "富婆"];
+            const shuffled = allTags.sort(() => Math.random() - 0.5);
+
+            const tagButtons = shuffled.map(tag =>
+                `<button class="tag-btn" id="tag-${tag}" onclick="selectTag('${tag}')">${tag}</button>`
+            ).join('');
+
+            const content = `
+                <div class="window" style="max-width: 550px;">
+                    <div class="window-header">
+                        <span class="window-title">⚙️ 终极目标.exe</span>
+                        <button class="window-close" onclick="closeModal()"></button>
+                    </div>
+                    <div class="window-body">
+                        <p style="text-align: center;">交接即将完成。请确认接收人的最终人生追求配置：</p>
+                        <div class="slots-container" id="slots-container">
+                            <div class="slot" id="slot-0" onclick="removeFromSlot(0)">空</div>
+                            <div class="slot" id="slot-1" onclick="removeFromSlot(1)">空</div>
+                            <div class="slot" id="slot-2" onclick="removeFromSlot(2)">空</div>
+                            <div class="slot" id="slot-3" onclick="removeFromSlot(3)">空</div>
+                        </div>
+                        <div class="options-group" id="tags-container" style="justify-content: center;">
+                            ${tagButtons}
+                        </div>
+                        <div style="text-align: center; margin-top: 10px;">
+                            <button class="btn btn-primary" onclick="generateFuture()">生成未来</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            showModal(content);
+        }
+
+        function selectTag(tag) {
+            if (gameState.usedTags.has(tag)) return;
+            if (gameState.finalSlots.length >= 4) return;
+
+            // 添加到槽位
+            const slotIndex = gameState.finalSlots.length;
+            gameState.finalSlots.push(tag);
+            gameState.usedTags.add(tag);
+
+            // 更新UI
+            const slot = document.getElementById(`slot-${slotIndex}`);
+            slot.textContent = tag;
+            slot.classList.add('filled');
+
+            const tagBtn = document.getElementById(`tag-${tag}`);
+            tagBtn.classList.add('used');
+        }
+
+        function removeFromSlot(index) {
+            if (index >= gameState.finalSlots.length) return;
+
+            const tag = gameState.finalSlots[index];
+
+            // 从槽位移除并重排
+            gameState.finalSlots.splice(index, 1);
+            gameState.usedTags.delete(tag);
+
+            // 重新渲染槽位
+            for (let i = 0; i < 4; i++) {
+                const slot = document.getElementById(`slot-${i}`);
+                if (i < gameState.finalSlots.length) {
+                    slot.textContent = gameState.finalSlots[i];
+                    slot.classList.add('filled');
+                } else {
+                    slot.textContent = '空';
+                    slot.classList.remove('filled');
+                }
+            }
+
+            // 恢复按钮
+            const tagBtn = document.getElementById(`tag-${tag}`);
+            tagBtn.classList.remove('used');
+        }
+
+        function generateFuture() {
+            if (gameState.finalSlots.length !== 4) {
+                alert("请先填满所有槽位！");
+                return;
+            }
+
+            // 检查是否匹配目标（顺序无关）
+            const selectedSet = new Set(gameState.finalSlots);
+            let allMatch = true;
+
+            if (selectedSet.size !== ANSWERS.finalTags.size) {
+                allMatch = false;
+            } else {
+                for (const tag of selectedSet) {
+                    if (!ANSWERS.finalTags.has(tag)) {
+                        allMatch = false;
+                        break;
+                    }
+                }
+            }
+
+            if (allMatch) {
+                triggerEnding();
+            } else {
+                alert("配置不正确，这不是正确的人生追求！");
+            }
+        }
+
+        // 大结局
+        function triggerEnding() {
+            closeModal();
+
+            // 隐藏桌面元素
+            document.getElementById('desktop').style.display = 'none';
+
+            // 显示结局画面
+            const endingScreen = document.getElementById('ending-screen');
+            endingScreen.classList.add('show');
+
+            // 逐行显示文字
+            const lines = endingScreen.querySelectorAll('.ending-text');
+            lines[0].classList.add('visible');
+
+            setTimeout(() => {
+                lines[1].classList.add('visible');
+            }, 1000);
+
+            setTimeout(() => {
+                lines[2].classList.add('visible');
+            }, 2000);
+        }
+
+        // 键盘事件
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const zipInput = document.getElementById('zip-password');
+                const timeInput = document.getElementById('time-input');
+                const restaurantInput = document.getElementById('restaurant-name');
+
+                if (zipInput && document.activeElement === zipInput) {
+                    verifyZipPassword();
+                } else if (timeInput && document.activeElement === timeInput) {
+                    submitTime();
+                } else if (restaurantInput && document.activeElement === restaurantInput) {
+                    verifyRestaurant();
+                }
+            }
+
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
